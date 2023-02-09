@@ -80,81 +80,24 @@ class Exam(QWidget):
     def close(self):
         sys.exit()
 
-    def oracle(self):
-        f=open(self.fileName,'r',encoding='utf-8')
-        rdr=csv.reader(f)
-        list=[]
-        for line in rdr:
-            list.append(line)
-        f.close
-
-        table_list=[]
-        #oracle
-        for i in list:
-            table_list.append(i[0])
-        table_set=set(table_list)
-        query_list=[]
-        for j in table_set:
-            text=[]
-            pk_cnt = 0
-            text.append("CREATE TABLE QUADMAX_BASE."+j+"(")
-            for i in range(0,len(list)):
-                if list[i][0]==j:
-                    text.append(list[i][2]+" "+list[i][5]+"(")
-                    if list[i][5] == 'NUMBER':
-                        text.append(list[i][7]+","+list[i][8])
-                    else:
-                        text.append(list[i][6])
-                    text.append(") ")
-                    if list[i][10]=='N':
-                        text.append("NOT NULL ")
-                    if list[i][9]=='PK':
-                        pk_cnt += 1
-                    text.append(",")
-                    comment=list[i][1]
-            if pk_cnt != 0 :
-                text.append("PRIMARY KEY (")
-                for i in range(0,len(list)):
-                    if list[i][0]==j and list[i][9]=="PK"  :
-                        text.append(list[i][2])
-                        text.append(",")
-                text.pop(-1)
-            text.append(") );")
-            comment_text=[]
-            comment_text.append("COMMENT ON TABLE "+j+" IS '"+comment+"';")
-            for i in range(0,len(list)):
-                if list[i][0]==j:
-                    comment_text.append("COMMENT ON COLUMN "+j+"."+list[i][2]+" IS '"+list[i][3]+"';")
-            query=''
-            for k in text:
-                query+=k
-            for m in comment_text:
-                query+=m
-            query_list.append(query)
-            
-            with open(self.dirName + """\\{}.txt""".format(j),'w',encoding="UTF-8") as outfile:
-                    f.write(query)
-
-        return self.result.setText(str(len(query_list))+ '개의 CREATE 파일이 생성 되었습니다')
-
-        #mariadb 테이블 생성문
-
-
+    #라디오버튼 선택값 변수화
     def SELEFT_DBTYPE(self):
         radioBtn = self.sender()
         if radioBtn.isChecked():
             self.DB_TYPE = radioBtn.text()
 
+    #DDL 생성함수
     def CreateTable(self):
+        #CSV파일읽어오기
         f=open(self.fileName[0],'r',encoding='utf-8')
         rdr=csv.reader(f)
         list=[]
         for line in rdr:
             list.append(line)
         f.close
+        #오라클
         if self.DB_TYPE == 'oracle':
             table_list=[]
-            #oracle
             for i in list:
                 table_list.append(i[0])
             table_set=set(table_list)
@@ -205,10 +148,9 @@ class Exam(QWidget):
             with open(self.dirName + """/{}.txt""".format('ALL'),'w',encoding="UTF-8") as f:
                 f.write(all_create)
             return self.result.setText(str(len(query_list)+1)+ '개의 CREATE 파일이 생성 되었습니다')
-            
+        #마리아디비
         if self.DB_TYPE == 'mariadb':
                 table_list=[]
-                #mariadb
                 for i in list:
                     table_list.append(i[0])
                 table_set=set(table_list)
