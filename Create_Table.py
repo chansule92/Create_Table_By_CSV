@@ -58,7 +58,7 @@ class Exam(QWidget):
 
         
         self.setGeometry(400,400,500,150)
-        self.setWindowTitle('JSON Maker')
+        self.setWindowTitle('Create Table')
         self.show()
     
         #결과저장폴더선택
@@ -88,146 +88,154 @@ class Exam(QWidget):
 
     #DDL 생성함수
     def CreateTable(self):
-        #CSV파일읽어오기
-        df=pd.read_csv("C:/Users/easycore/Downloads/insert_define.csv",encoding='utf8')
-        #오라클
-        if self.DB_TYPE == 'oracle':
-            table_list=[]
-            for i in df.A_TABLE_NAME:
-                table_list.append(i)
-            table_set=set(table_list)
-            query_list=[]
-            for j in table_set:
-                text=[]
-                pk_cnt=0
-                temp_df=df.loc[df['A_TABLE_NAME']==j]
-                text.append("CREATE TABLE QUADMAX_BASE."+j+"(")
-                for i in range(0,len(temp_df)):
-                    text.append(temp_df.iloc[i]['A_COLUMN_NAME'])
-                    text.append(" ")
-                    text.append(temp_df.iloc[i]['A_DATA_TYPE']+"(")
-                    if temp_df.iloc[i]['A_DATA_TYPE'] == 'NUMBER':
-                        text.append(int(temp_df.iloc[i]['A_DATA_PRECISION']))
-                        text.append(",")
-                        text.append(int(temp_df.iloc[i]['A_DATA_SCALE']))
-                    else:
-                        text.append(temp_df.iloc[i]['A_DATA_LENGTH'])
-                    text.append(") ")
-                    if temp_df.iloc[i]['NULLABLE']=='N':
-                        text.append("NOT NULL ")
-                    if temp_df.iloc[i]['비고3(PK구분)']=='PK':
-                        pk_cnt +=1
-                        text.append(",")
-                        comment=temp_df.iloc[i]['A_TABLE_COMMENTS']
-                if pk_cnt != 0 :
-                    text.append("PRIMARY KEY (")
-                for i in range(0,len(temp_df)):
-                    if temp_df.iloc[i]['A_TABLE_NAME']==j and temp_df.iloc[i]['비고3(PK구분)']=="PK":
-                        text.append(temp_df.iloc[i]['A_COLUMN_NAME'])
-                        text.append(",")
-                text.pop(-1)
-                text.append(") );")
-                comment_text=[]
-                comment_text.append("COMMENT ON TABLE "+j+"IS '"+comment+"';")
-                for i in range(0,len(temp_df)):
-                    if temp_df.iloc[i]['A_TABLE_NAME']==j:
-                        comment_text.append("COMMENT ON COLUMN "+j+"."+temp_df.iloc[i]["A_COLUMN_NAME"]+" IS '")
-                        comment_text.append(str(temp_df.iloc[i]["A_COLUMN_COMMENTS"])+"';")
-                query=''
-                for k in text:
-                    query += str(k)
-                for m in comment_text:
-                    query+=m
-                query_list.append(query)
-                
-                with open(self.dirName + """/{}.txt""".format(j),'w',encoding="UTF-8") as f:
-                        f.write(query)
-            all_create=''
-            for k in query_list:
-                all_create+=k
-            with open(self.dirName + """/{}.txt""".format('ALL'),'w',encoding="UTF-8") as f:
-                f.write(all_create)
-            return self.result.setText(str(len(query_list)+1)+ '개의 CREATE 파일이 생성 되었습니다')
-        #마리아디비
-        if self.DB_TYPE == 'mariadb':
-            table_list=[]
-            for i in df.A_TABLE_NAME:
-                table_list.append(i)
-            table_set=set(table_list)
-            query_list=[]
-            for j in table_set:
-                text=[]
-                pk_cnt=0
-                temp_df=df.loc[df['A_TABLE_NAME']==j]
-                text.append("CREATE TABLE QUADMAX_BASE."+j+"(")
-                for i in range(0,len(temp_df)):
-                    text.append(temp_df.iloc[i]['A_COLUMN_NAME'])
-                    text.append(" ")
-                    if temp_df.iloc[i]['A_DATA_TYPE'] == 'NUMBER':
-                        if temp_df.iloc[i]['A_DATA_SCALE']!= 0:
-                            text.append("DECIMAL(")
-                            text.append(int(temp_df.iloc[i]['A_DATA_PRECISION']))
+        try:
+            #CSV파일읽어오기
+            df=pd.read_csv(self.fileName[0],encoding='utf8')
+            #오라클
+            if self.DB_TYPE == 'oracle':
+                table_list=[]
+                for i in df.TABLE_NAME:
+                    table_list.append(i)
+                table_set=set(table_list)
+                query_list=[]
+                for j in table_set:
+                    text=[]
+                    pk_cnt=0
+                    temp_df=df.loc[df['TABLE_NAME']==j]
+                    text.append("CREATE TABLE "+j+"(")
+                    for i in range(0,len(temp_df)):
+                        text.append(temp_df.iloc[i]['COLUMN_NAME'])
+                        text.append(" ")
+                        text.append(temp_df.iloc[i]['DATA_TYPE']+"(")
+                        if temp_df.iloc[i]['DATA_TYPE'] == 'NUMBER':
+                            text.append(int(temp_df.iloc[i]['DATA_PRECISION']))
                             text.append(",")
-                            text.append(int(temp_df.iloc[i]['A_DATA_SCALE']))
-                            text.append(") ")
-                        elif temp_df.iloc[i]['A_DATA_PRECISION']== 5:
-                            text.append("SMALLINT(")
-                            text.append(int(temp_df.iloc[i]['A_DATA_PRECISION']))
-                            text.append(") ")
-                        elif temp_df.iloc[i]['A_DATA_PRECISION']== 10:
-                            text.append("INT(")
-                            text.append(int(temp_df.iloc[i]['A_DATA_PRECISION']))
-                            text.append(") ")
-                        elif temp_df.iloc[i]['A_DATA_PRECISION']== 19:
-                            text.append("BIGINT(")
-                            text.append(int(temp_df.iloc[i]['A_DATA_PRECISION']))
-                            text.append(") ")
-                    elif temp_df.iloc[i]['A_DATA_TYPE'] == 'VARCHAR2':
-                        text.append("VARCHAR(")
-                        text.append(temp_df.iloc[i]['A_DATA_LENGTH'])
+                            text.append(int(temp_df.iloc[i]['DATA_SCALE']))
+                        else:
+                            text.append(temp_df.iloc[i]['DATA_LENGTH'])
                         text.append(") ")
-                    elif temp_df.iloc[i]['A_DATA_TYPE'] == 'CLOB':
-                        text.append("TEXT")
-                    elif temp_df.iloc[i]['A_DATA_TYPE'] == 'DATE':
-                        text.append("VARCHAR(14)")
-                    else:
-                        text.append(temp_df.iloc[i]['A_DATA_TYPE'])
-                        text.append("(")
-                        text.append(temp_df.iloc[i]["A_DATA_LENGTH"])
-                        text.append(") ")
-                    if temp_df.iloc[i]['NULLABLE']=='N':
-                        text.append("NOT NULL ")
-                    if temp_df.iloc[i]['비고3(PK구분)']=='PK':
-                        pk_cnt +=1
-                    if temp_df.iloc[i]['A_COLUMN_COMMENTS']=='':
-                        text.append(",")
-                    else:
-                        text.append(" COMMENT '")
-                        text.append(temp_df.iloc[i]['A_COLUMN_COMMENTS'])
-                        text.append("',")
-                    comment=temp_df.iloc[i]['A_TABLE_COMMENTS']
-                if pk_cnt != 0 :
-                    text.append("PRIMARY KEY (")
-                for i in range(0,len(temp_df)):
-                    if temp_df.iloc[i]['비고3(PK구분)']=="PK":
-                        text.append(temp_df.iloc[i]['A_COLUMN_NAME'])
-                        text.append(",")
-                text.pop(-1)
-                text.append(")) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='")
-                text.append(comment)
-                text.append("';")
-                query=''
-                for k in text:
-                    query += str(k)
-                query_list.append(query)
-                with open(self.dirName + """/{}.txt""".format(j),'w',encoding="UTF-8") as f:
-                        f.write(query)
-            all_create=''
-            for k in query_list:
-                all_create+=k
-            with open(self.dirName + """/{}.txt""".format('ALL'),'w',encoding="UTF-8") as f:
-                f.write(all_create)
-            return self.result.setText(str(len(query_list)+1)+ '개의 CREATE 파일이 생성 되었습니다')
+                        if temp_df.iloc[i]['NULLABLE']=='N':
+                            text.append("NOT NULL ")
+                        if temp_df.iloc[i]['PK']=='PK':
+                            pk_cnt +=1
+                            text.append(",")
+                            comment=temp_df.iloc[i]['TABLE_COMMENTS']
+                    if pk_cnt != 0 :
+                        text.append("PRIMARY KEY (")
+                    for i in range(0,len(temp_df)):
+                        if temp_df.iloc[i]['TABLE_NAME']==j and temp_df.iloc[i]['PK']=="PK":
+                            text.append(temp_df.iloc[i]['COLUMN_NAME'])
+                            text.append(",")
+                    text.pop(-1)
+                    text.append(") );")
+                    comment_text=[]
+                    comment_text.append("COMMENT ON TABLE "+j+"IS '"+comment+"';")
+                    for i in range(0,len(temp_df)):
+                        if temp_df.iloc[i]['TABLE_NAME']==j:
+                            comment_text.append("COMMENT ON COLUMN "+j+"."+temp_df.iloc[i]["COLUMN_NAME"]+" IS '")
+                            comment_text.append(str(temp_df.iloc[i]["COLUMN_COMMENTS"])+"';")
+                    query=''
+                    for k in text:
+                        query += str(k)
+                    for m in comment_text:
+                        query+=m
+                    query_list.append(query)
+                    
+                    with open(self.dirName + """/{}.txt""".format(j),'w',encoding="UTF-8") as f:
+                            f.write(query)
+                all_create=''
+                for k in query_list:
+                    all_create+=k
+                with open(self.dirName + """/{}.txt""".format('ALL'),'w',encoding="UTF-8") as f:
+                    f.write(all_create)
+                return self.result.setText(str(len(query_list)+1)+ '개의 CREATE 파일이 생성 되었습니다')
+            #마리아디비
+            if self.DB_TYPE == 'mariadb':
+                table_list=[]
+                for i in df.TABLE_NAME:
+                    table_list.append(i)
+                table_set=set(table_list)
+                query_list=[]
+                for j in table_set:
+                    text=[]
+                    pk_cnt=0
+                    temp_df=df.loc[df['TABLE_NAME']==j]
+                    text.append("CREATE TABLE "+j+"(")
+                    for i in range(0,len(temp_df)):
+                        text.append(temp_df.iloc[i]['COLUMN_NAME'])
+                        text.append(" ")
+                        if temp_df.iloc[i]['DATA_TYPE'] == 'NUMBER':
+                            if temp_df.iloc[i]['DATA_SCALE']!= 0:
+                                text.append("DECIMAL(")
+                                text.append(int(temp_df.iloc[i]['DATA_PRECISION']))
+                                text.append(",")
+                                text.append(int(temp_df.iloc[i]['DATA_SCALE']))
+                                text.append(") ")
+                            elif temp_df.iloc[i]['DATA_PRECISION']== 5:
+                                text.append("SMALLINT(")
+                                text.append(int(temp_df.iloc[i]['DATA_PRECISION']))
+                                text.append(") ")
+                            elif temp_df.iloc[i]['DATA_PRECISION']== 10:
+                                text.append("INT(")
+                                text.append(int(temp_df.iloc[i]['DATA_PRECISION']))
+                                text.append(") ")
+                            elif temp_df.iloc[i]['DATA_PRECISION']== 19:
+                                text.append("BIGINT(")
+                                text.append(int(temp_df.iloc[i]['DATA_PRECISION']))
+                                text.append(") ")
+                        elif temp_df.iloc[i]['DATA_TYPE'] == 'VARCHAR2':
+                            text.append("VARCHAR(")
+                            text.append(temp_df.iloc[i]['DATA_LENGTH'])
+                            text.append(") ")
+                        elif temp_df.iloc[i]['DATA_TYPE'] == 'CLOB':
+                            text.append("TEXT")
+                        elif temp_df.iloc[i]['DATA_TYPE'] == 'DATE':
+                            text.append("VARCHAR(14)")
+                        else:
+                            text.append(temp_df.iloc[i]['DATA_TYPE'])
+                            text.append("(")
+                            text.append(temp_df.iloc[i]["DATA_LENGTH"])
+                            text.append(") ")
+                        if temp_df.iloc[i]['NULLABLE']=='N':
+                            text.append("NOT NULL ")
+                        if temp_df.iloc[i]['PK']=='PK':
+                            pk_cnt +=1
+                        if temp_df.iloc[i]['COLUMN_COMMENTS']=='':
+                            text.append(",")
+                        else:
+                            text.append(" COMMENT '")
+                            text.append(temp_df.iloc[i]['COLUMN_COMMENTS'])
+                            text.append("'")
+                            text.append(",")
+                        comment=temp_df.iloc[i]['TABLE_COMMENTS']
+                    if pk_cnt != 0 :
+                        text.append("PRIMARY KEY (")
+                        for i in range(0,len(temp_df)):
+                            if temp_df.iloc[i]['PK']=="PK":
+                                text.append(temp_df.iloc[i]['COLUMN_NAME'])
+                                text.append(",")
+                    text.pop(-1)
+                    if pk_cnt != 0:
+                        text.append("))")
+                    else :
+                        text.append(")")
+                    text.append(" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='")
+                    text.append(comment)
+                    text.append("';")
+                    query=''
+                    for k in text:
+                        query += str(k)
+                    query_list.append(query)
+                    with open(self.dirName + """/{}.txt""".format(j),'w',encoding="UTF-8") as f:
+                            f.write(query)
+                all_create=''
+                for k in query_list:
+                    all_create+=k
+                with open(self.dirName + """/{}.txt""".format('ALL'),'w',encoding="UTF-8") as f:
+                    f.write(all_create)
+                return self.result.setText(str(len(query_list)+1)+ '개의 CREATE 파일이 생성 되었습니다')
+        except AttributeError:
+            return self.result.setText("DB타입이 선택되지않았거나 파일, 저장경로가 선택되지않았습니다.")
 
 
     def tglStat(self,state):
